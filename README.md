@@ -1,70 +1,82 @@
-# MATLAB: Archlinux integration
+# MATLAB with Arch Build System
 
-This PKGBUILD creates an Arch Linux package for MATLAB
-Additionally; it also builds python engine.
+[中文](README_cn.md)
 
-***WARNING***, this package NEEDS you to obtain the files; as the files are too large to host elsewhere.
+This PKGBUILD creates an Arch Linux package for MATLAB.
+
+Additionally, it also builds python engine. They are stored in `matlab` and `python-matlabengine` packages separately.
+
+***WARNING*** this package NEEDS you to obtain the original off-line installer, as unauthorized distributions are not permitted in user agreement.
 
 ## Tips
 
-* You probably want to run this locally; since the package will be large.
-If you are managing your own repos; depending on bandwidth and size constrants;
-exclude this package from your workflow.
-(Partial install is around 8 GB; and full install about 16 GB)
-* Turn off compression if this package will only be installed on the build machine;
-this cuts a fair amount of time from the build and compression is unneccessary on local machines.
+* You probably want to run this locally, since the package will be large. Turn off compression if this package will only be installed on the build machine.
+  This cuts a fair amount of time from the build and compression is unnecessary on local machines. 
+* You may also use `tar` instead of packing it into `zst` and modify the PKGBUILD when preparing the off-line installer.
+* If you are managing your own repos, depending on bandwidth and size constants,
+  exclude this package from your work-flow.
+  (Partial install is over 8 GB, and full install about 12 GB)
 * Set `MATLAB_INTEL_OVERRIDE='yes'` in your environment if hardware acceleration
 does not work on your Intel GPU.
 
-# Requirements
+## Requirements
 
-Besides the dependencies; the source files MUST be present at the directory.
-The user MUST supply;
+Besides the dependencies, the source files MUST be present at the directory.
+The user MUST supply:
 
-* **matlab.fik**: Plain text file installation key
-* **matlab.lic**: License file
-* **matlab.tar**: Software tarball
+* `matlab.fik`: installation key in plain text file 
+* `matlab.lic`: License file
+* `matlab.tar.zst`: off-line installer
 
-Then run `makepkg -s` from the PKGBUILD directory to build the package.
+Then run `makepkg -s` from the PKGBUILD directory to build the package. The making is a long procedure.
 
-## File Installation Key & Licence File:
+### File Installation Key & License File
 
-[Here is the current link to the instructions](https://www.mathworks.com/help/install/ug/install-using-a-file-installation-key.html)
+Here is the current link to the [instructions](https://www.mathworks.com/help/install/ug/install-using-a-file-installation-key.html) by mathworks.
 
 File installation key identifies this specific installation of matlab.
 The license file authorizes that this key can use the toolboxes.
-Follow the steps;
+Follow the steps:
 
 * Go to [License center](https://www.mathworks.com/licensecenter) on mathworks
 * On install and activate tab; select (or create) an appropriate license
     * If no license is listed because you're using your organization's license and this is your first time installing MATLAB, click the link for manual activation. Insert the MAC address of a network card on your PC in the Host ID field, as for the username, it'll have to be the one of the account (on your Arch installation) that will be using MATLAB.
 * Navigate to download the license file and the file installation key
-* Download the **license file** and put the file in the repository
+* Download the **license file** and put the file in the repository with the correct name.
 * Copy and paste the **file installation key** in a plain text file
 
-## Tarball
+If the matlab is distributed through your organization’s network rather than your own use, the file installation key and license file would be invalid on other computers. When matlab recognizes invalid license, it would not start at all.
 
-**To run the installer, libselinux is needed!**
+It may help if you remove your license for building, i. e. uncomment the lines on the end of `build()` of PKGBUILD. When the user starts matlab for the first time, the activation program will pop out guiding you through the activation process.
+
+It still can be activated by running `activate_matlab.sh` after the install, no matter the license is removed or not. The script will activate it and put the correct license file under `.matlab/licenses` under your home folder.
+
+### Off-line Installer
 
 * [Download the matlab installer](https://www.mathworks.com/downloads)
 * Unpack and launch the installer
 * After logging in and accepting license; select
 `Advanced Options > I want to download without installing`
-from the top dropdown menu.
+from the top drop down menu.
 * Set the download location to an empty directory called `matlab`
 * Select the toolboxes you want in the `PKGBUILD`.
 (Alternatively install them all)
 * After downloading; from the parent directory; do
-`tar --create --verbose --file matlab.tar matlab`
+`tar -I zstd -cvf matlab.tar.zst matlab`
 to create the tarball.
 
-## Large files
+You may also acquire the off-line installer from your organizations, but make sure the file contains correct permissions, as normal zip could drop them, otherwise the installer would not run correctly.
 
-To transport large files in fat32 media (most flash drives); use split and cat;
-* **Split**: `split --bytes 3G --numeric-suffixes=0 matlab.tar.gz matlab.tar.gz.`
-* **Concatenate**: `cat matlab.tar.gz.* > matlab.tar.gz`
+### Transmitting Large files
 
-## Modules
+To transmit large files in FAT32 media (most flash drives), use split and cat:
+* **Split**: `split --bytes 3G --numeric-suffixes=0 matlab.tar.zst matlab.tar.zst.`
+* **Concatenate**: `cat matlab.tar.zst.* > matlab.tar.zst`
+
+### Modules
 
 Matlab comes with a [lot of products](https://www.mathworks.com/products.html).
-Most are not needed; check PKGBUILD to pick and choose appropriately.
+Most are not needed nor provided in your license, check PKGBUILD to pick and choose appropriately.
+
+
+

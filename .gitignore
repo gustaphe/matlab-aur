@@ -1,6 +1,7 @@
 *.tar.gz
 *.tar.xz
 *.tar
+*.tar.zst
 *.zip
 *.fik
 *.lic
