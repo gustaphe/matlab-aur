@@ -7,7 +7,7 @@ name=MATLAB
 
 pkgbase=matlab
 pkgname=('python-matlabengine' 'matlab')
-pkgrel=1
+pkgrel=2
 # No need to modify the pkgver here, which will be determined by the script
 # in the offline installer you provided.
 pkgver=9.10.0.1710957
@@ -62,9 +62,7 @@ depends=(
   'zlib')
 # These I got from arch before and afraid to play around.
 # GCC: https://www.mathworks.com/support/requirements/supported-compilers.html
-# We use the default gcc and gstreamer here. 
 depends+=(
-  'gcc' 'gcc-fortran' 'gcc-libs'
   'gconf'
   'glu'
   'gstreamer'
@@ -156,14 +154,15 @@ prepare() {
   gendesk -f -n \
     --pkgname "${pkgname}" \
     --pkgdesc "${pkgdesc}" \
+    --name "MATLAB" \
     --categories "Development;Education;Science;Mathematics;IDE" \
     --mimetypes "application/x-matlab-data;text/x-matlab" \
-    --exec 'sh -c '\''if [ "${MATLAB_INTEL_OVERRIDE}" = "yes" ] ; then exec env MESA_LOADER_DRIVER_OVERRIDE=i965 matlab -desktop ; else exec matlab -desktop ; fi'\'
+    --icon "${pkgname}.png"
+    --exec 'sh -c '\''if [ "${MATLAB_INTEL_OVERRIDE}" = "yes" ] ; then exec env MESA_LOADER_DRIVER_OVERRIDE=i965 GTK_PATH=/usr/lib/gtk-2.0 matlab -desktop ; else exec env GTK_PATH=/usr/lib/gtk-2.0 matlab -desktop ; fi'\'
     
 }
 
 build() {
-  
   msg2 "Installing with original installer..."
   # Using the installer with the -inputFile parameter will automatically
   #   cause the installation to be non-interactive
@@ -192,7 +191,7 @@ build() {
   
   # uncomment below to remove the license for distribution.
   # msg2 removing build licenses...
-  # rm -rf "${srcdir}/build/licenses/*"
+  rm -rf "${srcdir}/build/licenses/*"
 }
 
 
@@ -237,12 +236,45 @@ package_python-matlabengine() {
 }
 
 package_matlab() {
+  # Compilers should be optional depends
+  msg2 "Determining compiler versions..."
+  if [ "$(vercmp ${pkgver} "9.10" )" -ge "0" ]; then
+  optdepends+=('gcc9: For MEX support'
+              'gcc8-fortran: For MEX support')
+  gccexc="gcc-9"
+  gfortranexc="gfortran-8"
+  elif [ "$(vercmp ${pkgver} "9.9" )" -ge "0" ]; then
+  optdepends+=('gcc8: For MEX support'
+              'gcc8-fortran: For MEX support')
+  gccexc="gcc-8"
+  gfortranexc="gfortran-8"
+  elif [ "$(vercmp ${pkgver} "9.4" )" -ge "0" ]; then
+  optdepends+=('gcc6: For MEX support'
+              'gcc6-fortran: For MEX support')
+  gccexc="gcc-6"
+  gfortranexc="gfortran-6"
+  elif [ "$(vercmp ${pkgver} "9.1" )" -ge "0" ]; then
+  optdepends+=('gcc49: For MEX support')
+  gccexc="gcc-49"
+  gfortranexc="gfortran-49"
+  elif [ "$(vercmp ${pkgver} "8.2" )" -ge "0" ]; then
+  optdepends+=('gcc47: For MEX support')
+  gccexc="gcc-47"
+  gfortranexc="gfortran-47"
+  else
+  msg2 "You need to install the GCC for MEX support yourself."
+  msg2 "Visit here to determine your GCC version."
+  msg2 "https://www.mathworks.com/support/requirements/previous-releases.html"
+  gccexc="gcc"
+  gfortranexc="gfortran"
+  fi
+  
   msg2 "Moving files from build area"
   install -dm755 "${pkgdir}/usr/lib/"
   mv "${srcdir}/build" "${pkgdir}/${instdir}"
 
   msg2 "Copying license"
-  install -D -m644 "${srcdir}/${pkgname}/license_agreement.txt" \
+  install -D -m644 "${srcdir}/${pkgbase}/license_agreement.txt" \
     "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
 
   msg2 "Symlink executables"
@@ -262,22 +294,21 @@ package_matlab() {
     "${pkgdir}/usr/share/applications/${pkgname}.desktop"
   install -Dm644 "${srcdir}/${pkgname}/bin/glnxa64/cef_resources/matlab_icon.png" "$pkgdir/usr/share/pixmaps/$pkgname.png"
 
-  # Seems that current gcc versions can be accepted by matlab. Removed these parts.
-  # Link mex options to ancient libraries
+  msg2 "Link mex options to ancient libraries"
   sysdir="bin/glnxa64/mexopts"
-#   mkdir -p "${pkgdir}/${instdir}/backup/${sysdir}"
-#   cp "${pkgdir}/${instdir}/${sysdir}/gcc_glnxa64.xml" \
-#     "${pkgdir}/${instdir}/backup/${sysdir}/"
-#   sed -i "s/gcc/gcc-8/g" "${pkgdir}/${instdir}/${sysdir}/gcc_glnxa64.xml"
-#   cp "${pkgdir}/${instdir}/${sysdir}/g++_glnxa64.xml" \
-#     "${pkgdir}/${instdir}/backup/${sysdir}/"
-#   sed -i "s/g++/g++-8/g" "${pkgdir}/${instdir}/${sysdir}/g++_glnxa64.xml"
-#   cp "${pkgdir}/${instdir}/${sysdir}/gfortran.xml" \
-#     "${pkgdir}/${instdir}/backup/${sysdir}/"
-#   sed -i "s/gfortran/gfortran-8/g" "${pkgdir}/${instdir}/${sysdir}/gfortran.xml"
-#   cp "${pkgdir}/${instdir}/${sysdir}/gfortran6.xml" \
-#     "${pkgdir}/${instdir}/backup/${sysdir}/"
-#   sed -i "s/gfortran/gfortran-8/g" "${pkgdir}/${instdir}/${sysdir}/gfortran6.xml"
+  mkdir -p "${pkgdir}/${instdir}/backup/${sysdir}"
+  cp "${pkgdir}/${instdir}/${sysdir}/gcc_glnxa64.xml" \
+    "${pkgdir}/${instdir}/backup/${sysdir}/"
+  sed -i "s/gcc/${gccexc}/g" "${pkgdir}/${instdir}/${sysdir}/gcc_glnxa64.xml"
+  cp "${pkgdir}/${instdir}/${sysdir}/g++_glnxa64.xml" \
+    "${pkgdir}/${instdir}/backup/${sysdir}/"
+  sed -i "s/g++/${gccexc}/g" "${pkgdir}/${instdir}/${sysdir}/g++_glnxa64.xml"
+  cp "${pkgdir}/${instdir}/${sysdir}/gfortran.xml" \
+    "${pkgdir}/${instdir}/backup/${sysdir}/"
+  sed -i "s/gfortran/${gfortranexc}/g" "${pkgdir}/${instdir}/${sysdir}/gfortran.xml"
+  cp "${pkgdir}/${instdir}/${sysdir}/gfortran6.xml" \
+    "${pkgdir}/${instdir}/backup/${sysdir}/"
+  sed -i "s/gfortran/${gfortranexc}/g" "${pkgdir}/${instdir}/${sysdir}/gfortran6.xml"
 
   msg2 "Remove unused library files"
   # <MATLABROOT>/sys/os/glnxa64/README.libstdc++
