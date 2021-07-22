@@ -7,7 +7,7 @@ name=MATLAB
 
 pkgbase=matlab
 pkgname=('python-matlabengine' 'matlab')
-pkgrel=2
+pkgrel=4
 # No need to modify the pkgver here, which will be determined by the script
 # in the offline installer you provided.
 pkgver=9.10.0.1710957
@@ -127,11 +127,11 @@ prepare() {
   
   msg2 "Release from tarball: ${release}"
   
-  _fik=$(grep -o '[0-9-]*' "${srcdir}/${pkgname}.fik")
+  _fik=$(grep -o '[0-9-]*' "${srcdir}/${pkgbase}.fik")
   
   msg2 "Modifying the installer settings..."
   
-  _set="${srcdir}/${pkgname}/installer_input.txt"
+  _set="${srcdir}/${pkgbase}/installer_input.txt"
   sed -i "s|^# destinationFolder=|destinationFolder=${srcdir}/build|" "${_set}"
   sed -i "s|^# fileInstallationKey=|fileInstallationKey=${_fik}|"   "${_set}"
   sed -i "s|^# agreeToLicense=|agreeToLicense=yes|"           "${_set}"
@@ -152,12 +152,12 @@ prepare() {
   msg2 "Generating desktop file..."
   
   gendesk -f -n \
-    --pkgname "${pkgname}" \
+    --pkgname "${pkgbase}" \
     --pkgdesc "${pkgdesc}" \
     --name "MATLAB" \
     --categories "Development;Education;Science;Mathematics;IDE" \
     --mimetypes "application/x-matlab-data;text/x-matlab" \
-    --icon "${pkgname}.png"
+    --icon "${pkgbase}"
     --exec 'sh -c '\''if [ "${MATLAB_INTEL_OVERRIDE}" = "yes" ] ; then exec env MESA_LOADER_DRIVER_OVERRIDE=i965 GTK_PATH=/usr/lib/gtk-2.0 matlab -desktop ; else exec env GTK_PATH=/usr/lib/gtk-2.0 matlab -desktop ; fi'\'
     
 }
@@ -176,7 +176,7 @@ build() {
   _matminor="$(find "${srcdir}/build/extern/engines/python" \
     -name 'matlabengineforpython3*.so' |
     sort |
-    sed 's|.*matlabengineforpython3_\([0-9]\)\.so|\1|g' |
+    sed 's|.*matlabengineforpython3_\([0-9]\+\)\.so|\1|g' |
     tail -1)"
   _pytminor="$(python -c 'import sys; print(sys.version_info.minor)')"
 
@@ -189,8 +189,7 @@ build() {
   fi
   PYTHONPATH="${srcdir}" python setup.py build
   
-  # uncomment below to remove the license for distribution.
-  # msg2 removing build licenses...
+  msg2 removing build licenses...
   rm -rf "${srcdir}/build/licenses/*"
 }
 
@@ -239,34 +238,48 @@ package_matlab() {
   # Compilers should be optional depends
   msg2 "Determining compiler versions..."
   if [ "$(vercmp ${pkgver} "9.10" )" -ge "0" ]; then
-  optdepends+=('gcc9: For MEX support'
-              'gcc8-fortran: For MEX support')
-  gccexc="gcc-9"
-  gfortranexc="gfortran-8"
+    optdepends+=('gcc9: For MEX support'
+                'gcc8-fortran: For MEX support')
+    gccexc="gcc-9"
+    gppexc="g++-9"
+    gfortranlib="gcc8-fortran"
+    gfortranexc="gfortran-8"
   elif [ "$(vercmp ${pkgver} "9.9" )" -ge "0" ]; then
-  optdepends+=('gcc8: For MEX support'
-              'gcc8-fortran: For MEX support')
-  gccexc="gcc-8"
-  gfortranexc="gfortran-8"
+    optdepends+=('gcc8: For MEX support'
+                'gcc8-fortran: For MEX support')
+    gccexc="gcc-8"
+    gppexc="g++-8"
+    gfortranlib="gcc8-fortran"
+    gfortranexc="gfortran-8"
   elif [ "$(vercmp ${pkgver} "9.4" )" -ge "0" ]; then
-  optdepends+=('gcc6: For MEX support'
-              'gcc6-fortran: For MEX support')
-  gccexc="gcc-6"
-  gfortranexc="gfortran-6"
+    optdepends+=('gcc6: For MEX support'
+                'gcc6-fortran: For MEX support')
+    gccexc="gcc-6"
+    gppexc="g++-6"
+    gfortranlib="gcc6-fortran"
+    gfortranexc="gfortran-6"
   elif [ "$(vercmp ${pkgver} "9.1" )" -ge "0" ]; then
-  optdepends+=('gcc49: For MEX support')
-  gccexc="gcc-49"
-  gfortranexc="gfortran-49"
+    optdepends+=('gcc49: For MEX support')
+    gccexc="gcc-49"
+    gppexc="g++-49"
+    gfortranlib="gcc49"
+    gfortranexc="gfortran-49"
   elif [ "$(vercmp ${pkgver} "8.2" )" -ge "0" ]; then
-  optdepends+=('gcc47: For MEX support')
-  gccexc="gcc-47"
-  gfortranexc="gfortran-47"
+    optdepends+=('gcc47: For MEX support')
+    gccexc="gcc-47"
+    gppexc="g++-47"
+    gfortranlib="gcc47"
+    gfortranexc="gfortran-47"
   else
-  msg2 "You need to install the GCC for MEX support yourself."
-  msg2 "Visit here to determine your GCC version."
-  msg2 "https://www.mathworks.com/support/requirements/previous-releases.html"
-  gccexc="gcc"
-  gfortranexc="gfortran"
+    msg2 "You need to install the GCC for MEX support yourself."
+    msg2 "Visit here to determine your needed GCC version."
+    msg2 "https://www.mathworks.com/support/requirements/previous-releases.html"
+    msg2 "Create your own GCC package with name \"gcc-matlab\", and link these excutables to /usr/bin:"
+    msg2 "gcc-matlab g++-matlab gfortran-matlab"
+    gccexc="gcc-matlab"
+    gppexc="g++-matlab"
+    gfortranlib="gcc-matlab"
+    gfortranexc="gfortran-matlab"
   fi
   
   msg2 "Moving files from build area"
@@ -283,16 +296,16 @@ package_matlab() {
     ln -s "${instdir}/bin/${_executable}" "${pkgdir}/usr/bin/${_executable}"
   done
   # This would otherwise conflict with mixtex
-  ln -s "${instdir}/bin/mex" "${pkgdir}/usr/bin/mex-${pkgname}"
+  ln -s "${instdir}/bin/mex" "${pkgdir}/usr/bin/mex-${pkgbase}"
   # This would otherwise conflict with mathematica
-  ln -s "${instdir}/bin/mcc" "${pkgdir}/usr/bin/mcc-${pkgname}"
+  ln -s "${instdir}/bin/mcc" "${pkgdir}/usr/bin/mcc-${pkgbase}"
   # Allow external software to find MATLAB linter binary
   ln -s "${instdir}/bin/glnxa64/mlint" "${pkgdir}/usr/bin/mlint"
 
   msg2 "Install desktop files"
-  install -D -m644 "${srcdir}/${pkgname}.desktop" \
-    "${pkgdir}/usr/share/applications/${pkgname}.desktop"
-  install -Dm644 "${srcdir}/${pkgname}/bin/glnxa64/cef_resources/matlab_icon.png" "$pkgdir/usr/share/pixmaps/$pkgname.png"
+  install -D -m644 "${srcdir}/${pkgbase}.desktop" \
+    "${pkgdir}/usr/share/applications/${pkgbase}.desktop"
+  install -Dm644 "${srcdir}/${pkgbase}/bin/glnxa64/cef_resources/matlab_icon.png" "$pkgdir/usr/share/pixmaps/$pkgbase.png"
 
   msg2 "Link mex options to ancient libraries"
   sysdir="bin/glnxa64/mexopts"
@@ -302,7 +315,7 @@ package_matlab() {
   sed -i "s/gcc/${gccexc}/g" "${pkgdir}/${instdir}/${sysdir}/gcc_glnxa64.xml"
   cp "${pkgdir}/${instdir}/${sysdir}/g++_glnxa64.xml" \
     "${pkgdir}/${instdir}/backup/${sysdir}/"
-  sed -i "s/g++/${gccexc}/g" "${pkgdir}/${instdir}/${sysdir}/g++_glnxa64.xml"
+  sed -i "s/g++/${gppexc}/g" "${pkgdir}/${instdir}/${sysdir}/g++_glnxa64.xml"
   cp "${pkgdir}/${instdir}/${sysdir}/gfortran.xml" \
     "${pkgdir}/${instdir}/backup/${sysdir}/"
   sed -i "s/gfortran/${gfortranexc}/g" "${pkgdir}/${instdir}/${sysdir}/gfortran.xml"
@@ -326,7 +339,10 @@ package_matlab() {
   # make sure MATLAB can find proper libraries libgfortran.so.3
   mkdir -p "${pkgdir}/${instdir}/backup/bin"
   cp "${pkgdir}/${instdir}/bin/matlab" "${pkgdir}/${instdir}/backup/bin"
-  sed -i 's|LD_LIBRARY_PATH="`eval echo $LD_LIBRARY_PATH`"|LD_LIBRARY_PATH="`eval echo $LD_LIBRARY_PATH`:/usr/lib/gcc/x86_64-pc-linux-gnu/'$(pacman -Q gcc | awk '{print $2}' | cut -d- -f1)'"|g' "${pkgdir}/${instdir}/bin/matlab"
+  # The gcc dependency should be determined at runtime.
+  sed -i "1s#^#if pacman -Q "${gfortranlib}' > /dev/null 2>&1 ; then \n export GCCVERSION=$(pacman -Q '${gfortranlib}" | awk '{print \$2}' | cut -d- -f1) \nfi\n\n#" "${pkgdir}/${instdir}/bin/matlab"
+  sed -i "1s/^/# Check the optional GCC dependency.\n/" "${pkgdir}/${instdir}/bin/matlab"
+  sed -i 's|LD_LIBRARY_PATH="`eval echo $LD_LIBRARY_PATH`"|if [ -n "${GCCVERSION}" ]; then \n LD_LIBRARY_PATH="`eval echo $LD_LIBRARY_PATH`:/usr/lib/gcc/x86_64-pc-linux-gnu/${GCCVERSION}"; \n else \n LD_LIBRARY_PATH="`eval echo $LD_LIBRARY_PATH`" \n fi \n|g' "${pkgdir}/${instdir}/bin/matlab"
 
   msg2 "Install the script file to make scripting easier with matlab"
   install -Dm 0755 "${srcdir}/matlab.script" "${pkgdir}/usr/bin/matscript"
