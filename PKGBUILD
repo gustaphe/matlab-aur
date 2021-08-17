@@ -157,7 +157,7 @@ prepare() {
     --name "MATLAB" \
     --categories "Development;Education;Science;Mathematics;IDE" \
     --mimetypes "application/x-matlab-data;text/x-matlab" \
-    --icon "${pkgbase}"
+    --icon "${pkgbase}" \
     --exec 'sh -c '\''if [ "${MATLAB_INTEL_OVERRIDE}" = "yes" ] ; then exec env MESA_LOADER_DRIVER_OVERRIDE=i965 GTK_PATH=/usr/lib/gtk-2.0 matlab -desktop ; else exec env GTK_PATH=/usr/lib/gtk-2.0 matlab -desktop ; fi'\'
     
 }
