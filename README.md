@@ -2,9 +2,9 @@
 
 This PKGBUILD creates an Arch Linux package for MATLAB.
 
-Additionally, it also builds python engine. They are stored in `matlab` and `python-matlabengine` packages separately.
+Additionally, it also builds the Python engine. They are stored in `matlab` and `python-matlabengine` packages separately.
 
-**WARNING**: this package NEEDS you to obtain the original off-line installer, as unauthorized distributions are not permitted in user agreement.
+**WARNING**: this package NEEDS you to obtain the original off-line installer, as unauthorized distributions are not permitted by the license agreement.
 
 ## Tips
 
@@ -13,7 +13,7 @@ Additionally, it also builds python engine. They are stored in `matlab` and `pyt
 * You may also use `tar` instead of packing it into `zst` and modify the PKGBUILD when preparing the off-line installer.
 * If you are managing your own repos, depending on bandwidth and size constants,
   exclude this package from your work-flow.
-  (Partial install is over 8 GB, and full install about 12 GB)
+  (Partial install is over 8 GB, and full install is about 12 GB)
 * Set `MATLAB_INTEL_OVERRIDE='yes'` in your environment if hardware acceleration
 does not work on your Intel GPU.
 
