@@ -25,7 +25,7 @@ Besides the PKGBUILD dependencies, by the end of this procedure these source fil
 
 * `matlab.fik`: installation key in a plain-text file.
 * `matlab.lic`: license file.
-* `matlab.tar.zst`: off-line installer.
+* `matlab.tar`: off-line installer.
 
 Then run `makepkg -s` from the same directory to build the package. It will take a lot of time, so make sure to bring with you a cup of coffee.
 
@@ -84,7 +84,7 @@ from the top-right drop-down menu.
 10. Move the files from the directory `matlab/YYYY_MM_DD` to `matlab`, then delete the `matlab/YYYY_MM_DD` directory.
 11. Create the tarball with:
     ```sh
-    tar -I zstd -cvf matlab.tar.zst matlab
+    tar -I zstd -cvf matlab.tar matlab
     ```
 
 If you acquire the off-line installer by other means, make sure the files have the correct permissions, as unzipping the archive without the proper flags could drop them, otherwise the installer won't run correctly.
@@ -94,11 +94,11 @@ If you acquire the off-line installer by other means, make sure the files have t
 To transmit large files in FAT32 media (most flash drives), first split the tarball:
 
 ```sh
-split --bytes 3G --numeric-suffixes=0 matlab.tar.zst matlab.tar.zst
+split --bytes 3G --numeric-suffixes=0 matlab.tar matlab.tar
 ```
 
 Then recreate it by concatenating the parts:
 
 ```sh
-cat matlab.tar.zst.* > matlab.tar.zst
+cat matlab.tar.* > matlab.tar
 ```
