@@ -7,5 +7,5 @@ mv MATLABROOT/bin/glnxa64/libfreetype.so.6 \
 date_dir=`echo matlab/*`
 mv $date_dir/* matlab/
 rmdir $date_dir
-tar -I zstd -cvf matlab.tar.zst matlab
+tar -I zstd -cvf matlab.tar matlab
 makepkg -s
