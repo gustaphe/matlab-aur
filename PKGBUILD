@@ -3,7 +3,9 @@
 # Contributor: Batuhan Baserdem <lastname dot firstname at gmail>
 
 pkgbase=matlab
-pkgname=('matlab' 'python-matlabengine')
+# python-matlabengine must be packaged before matlab, because package_matlab
+# moves files needed by package_python-matlabengine, they're expensive to copy.
+pkgname=('python-matlabengine' 'matlab')
 pkgrel=3
 # No need to modify the pkgver here, it will be determined by the script
 # in the offline installer.
@@ -179,9 +181,8 @@ build() {
   rm -rf "${srcdir}/build/licenses/*"
 }
 
-
 package_python-matlabengine() {
-  depends+=("python" "matlab")
+  depends=('matlab' 'python')
 
   msg2 "Installing license..."
   install -D -m644 "${srcdir}/${pkgbase}/license_agreement.txt" \
@@ -309,12 +310,12 @@ package_matlab() {
     "${pkgdir}/${instdir}/backup/${sysdir}/"
   sed -i "s/gfortran/${gfortranexc}/g" "${pkgdir}/${instdir}/${sysdir}/gfortran6.xml"
 
-  msg2 "Remove unused library files"
+  msg2 "Removing unused library files..."
   # <MATLABROOT>/sys/os/glnxa64/README.libstdc++
   sysdir="sys/os/glnxa64"
   install -d -m755 "${pkgdir}/${instdir}/backup/${sysdir}"
   mv "${pkgdir}/${instdir}/${sysdir}/"{libstdc++.so.*,libgcc_s.so.*,libgfortran.so.*,libquadmath.so.*} \
     "${pkgdir}/${instdir}/backup/${sysdir}/"
-  mv ${pkgdir}/${instdir}/bin/glnxa64/libfreetype.so.* \
-    "${pkgdir}/${instdir}/backup/bin/glnxa64/"
+  mv "${pkgdir}/${instdir}"/bin/glnxa64/libfreetype.so.* \
+    "${pkgdir}/${instdir}"/backup/bin/glnxa64/
 }
