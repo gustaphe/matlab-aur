@@ -130,7 +130,7 @@ prepare() {
   # Install specified products if partialinstall is set to 'true'.
   if [ "${partialinstall}" = 'true' ]; then
     for _prod in "${products[@]}"; do
-      sed -i 's|^#\(product.'"${_prod}"'\)|\1|' "${_set}"
+      sed -i 's|^#\(product.'"${_prod}"'\)$|\1|' "${_set}"
     done
   fi
 
