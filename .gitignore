@@ -9,3 +9,5 @@ src/
 pkg/
 ml/
 *.png
+install.log
+matlab/

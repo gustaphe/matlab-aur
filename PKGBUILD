@@ -18,7 +18,6 @@ b2sums=(SKIP SKIP SKIP)
 # Example list of products for a partial installation. Leave empty for a full installation.
 _products=(
     'MATLAB'
-    'Simulink'
 )
 
 pkgver() {
